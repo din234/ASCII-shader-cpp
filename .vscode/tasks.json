@@ -1,0 +1,65 @@
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cm1",
+            "type": "shell",
+            "command": "g++",
+            "args": ["-o","a","main.o","-lgdi32"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn":["cm2"]
+        },
+        {
+            "label": "cm2",
+            "type": "shell",
+            "command": "g++",
+            "args": ["-c","main.cpp"],
+            "group": "build"
+        }
+    ]
+}
+
+
+/*
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cm1",
+            "type": "shell",
+            "command": "g++",
+            "args": ["-g","main.cpp"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
+*/
+
+/*
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cm1",
+            "type": "shell",
+            "command": "g++",
+            "args": ["-o","a","-Wall","main.cpp","-mwindows","glut32.lib","-lopengl32","-lglu32"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
+*/
+
+// g++ -o test -Wall test.c -mwindows glut32.lib -lopengl32 -lglu32
