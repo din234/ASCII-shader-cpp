@@ -50,6 +50,7 @@ class consoleGraphic {
         const int minTimePerFrame = 33; // ms
         int elappsedTime = 0;
         bool debug = true;
+        bool runTest = true;
 
     protected:
         void createBuffering(int fontSize,short setWidth, short setHeight);
@@ -146,6 +147,9 @@ void consoleGraphic::setFont(int x, int y,int lightIndex,int attribute){
 void consoleGraphic::run(){
     onCreate();
     
+
+
+    /*
     std::thread th([=]()
     {
         while (true){
@@ -156,9 +160,9 @@ void consoleGraphic::run(){
             }
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
-    });
+    });*/
 
-    while (true){
+    while (runTest){
         auto start = std::chrono::system_clock::now();
         onUpdate();
         WriteConsoleOutput(hout,map,buffSize,buffCord,&writeArea);

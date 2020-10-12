@@ -70,6 +70,8 @@ void imageRenderer::checkUserInput(){
         debug = false;
         std::cin.ignore();
         debug = true;
+    } else if (GetAsyncKeyState(VK_SPACE) < 0){
+        runTest = false;
     }
 }
 
@@ -135,9 +137,11 @@ void run(){
 
 int main(int argc ,char *argv[])
 {
-    _CrtDumpMemoryLeaks();
     run();
-    //std::cout << "Test\n";
+    _CrtDumpMemoryLeaks();
+    //int *test = new int[100];
+
+    system("pause");
     return 0;
 }
 
