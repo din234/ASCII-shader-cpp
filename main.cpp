@@ -1,12 +1,18 @@
+#pragma comment(lib, "User32.lib") // linker cl.exe GetAsynk
 #define _WIN32_WINNT 0x501
+
+// https://docs.microsoft.com/en-us/visualstudio/debugger/finding-memory-leaks-using-the-crt-library?view=vs-2019
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
 
 #include <iostream>
 #include <cmath>
 
-//#include <assert.h>
-
 #include "include/bitmap.h"
 #include "include/consoleGraphic.h"
+//#include <assert.h>
+
 
 struct stripe{
     int width;
@@ -31,38 +37,45 @@ class imageRenderer : public consoleGraphic{
         int onUpdate() override;
     public:
         imageRenderer();
+        ~imageRenderer(){
+            delete[] imageInfo.greyScale;
+            delete[] imageInfo.colorAttr;
+        }
 };
 
 
 imageRenderer::imageRenderer(){}
 
 void imageRenderer::checkUserInput(){
-    if (elappsedTime < minTimePerFrame){
-        elappsedTime = minTimePerFrame;
+    int temp = elappsedTime;
+    if (temp < minTimePerFrame){
+        temp = minTimePerFrame;
     }
     //elappsedTime = 1; // testing
 
     if (GetAsyncKeyState(VK_LEFT) < 0){
-        offSetX-= elappsedTime*sensitivity;
+        offSetX-= temp*sensitivity;
     } else if (GetAsyncKeyState(VK_RIGHT) < 0){
-        offSetX+= elappsedTime*sensitivity;
+        offSetX+= temp*sensitivity;
     } else if (GetAsyncKeyState(VK_UP) < 0 ){
-        offSetY-= elappsedTime*sensitivity;
+        offSetY-= temp*sensitivity;
     } else if (GetAsyncKeyState(VK_DOWN) < 0){
-        offSetY+= elappsedTime*sensitivity;
+        offSetY+= temp*sensitivity;
     } else if (GetAsyncKeyState('X') < 0){
-        zoom+= elappsedTime*sensitivity;
+        zoom+= temp*sensitivity;
     } else if (GetAsyncKeyState('Z') < 0 && zoom > 1){
-        zoom-= elappsedTime*sensitivity;
+        zoom-= temp*sensitivity;
     } else if (GetAsyncKeyState(VK_ESCAPE) < 0){
         SetConsoleTitleA("Stopped!!!");
+        debug = false;
         std::cin.ignore();
+        debug = true;
     }
 }
 
 
 int imageRenderer::onCreate(){
-    bitMap image("./image/24_bit/lena_color.bmp");
+    bitMap image("./image/24_bit/sample.bmp");
     int imageSize = image.getWidth()*image.getHeight();
 
     imageInfo.width = image.getWidth();
@@ -110,10 +123,21 @@ int imageRenderer::onUpdate() {
 }
 
 
-int main(int argc ,char *argv[])
-{
+
+
+
+
+void run(){
     imageRenderer imageRun;
     imageRun.run();
+}
+
+
+int main(int argc ,char *argv[])
+{
+    _CrtDumpMemoryLeaks();
+    run();
+    //std::cout << "Test\n";
     return 0;
 }
 

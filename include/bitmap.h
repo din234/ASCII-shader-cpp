@@ -3,9 +3,7 @@
 #ifndef BITMAP_H
 #define BITMAP_H
 
-
-#include <wingdi.h>
-#include <stdio.h>
+#include <Windows.h>
 
 // Declaration
 class bitMap {

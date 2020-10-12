@@ -7,19 +7,28 @@
         {
             "label": "cm1",
             "type": "shell",
-            "command": "g++",
-            "args": ["-o","a","main.o","-lgdi32"],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "dependsOn":["cm2"]
+            "command": "build.bat",
+            "problemMatcher": [
+                "$msCompile"
+            ]
         },
         {
-            "label": "cm2",
             "type": "shell",
-            "command": "g++",
-            "args": ["-c","main.cpp"],
+            "label": "C/C++: cl.exe build active file",
+            "command": "cl.exe",
+            "args": [
+                "/Zi",
+                "/EHsc",
+                "/Fe:",
+                "${fileDirname}\\${fileBasenameNoExtension}.exe",
+                "${file}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ],
             "group": "build"
         }
     ]

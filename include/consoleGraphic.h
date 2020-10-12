@@ -5,9 +5,15 @@
 #ifndef CONSOLE_GRAPHIC_H
 #define CONSOLE_GRAPHIC_H
 
-//#include <chrono>
-#include <windows.h>
-#include "mingw_thread/mingw.thread.h"
+
+#include <Windows.h>
+#include <string>
+#include <thread>
+
+
+/*
+// Add this for compile using g++
+#include "mingw_thread/mingw.thread.h" // mingW
 
 typedef struct _CONSOLE_FONT_INFOEX {
     ULONG cbSize;
@@ -25,13 +31,14 @@ BOOL WINAPI SetCurrentConsoleFontEx(HANDLE hConsoleOutput, BOOL bMaximumWindow,P
 );
 #ifdef __cplusplus
 }
-#endif
+#endif*/
 
 
 class consoleGraphic {
     private:
-        CONSOLE_FONT_INFOEX fontInfo{0};
+        HWND consoleWindow = GetConsoleWindow();
         HANDLE hout;
+        CONSOLE_FONT_INFOEX fontInfo{0};
         CHAR_INFO *map;
         COORD buffSize;
         COORD buffCord;
@@ -55,6 +62,9 @@ class consoleGraphic {
         void setFont(int x, int y,int lightIndex,int attribute);
     public:
         consoleGraphic();
+        ~consoleGraphic(){ // prevent memory leak
+            delete[] map;
+        }
         void run();
 };
 
@@ -67,13 +77,20 @@ class consoleGraphic {
 
 
 consoleGraphic::consoleGraphic(){
+    SetWindowLong(consoleWindow, GWL_STYLE, GetWindowLong(consoleWindow, GWL_STYLE) & ~WS_MAXIMIZEBOX & ~WS_SIZEBOX);
     fontInfo.cbSize=sizeof(fontInfo);
     hout = GetStdHandle(STD_OUTPUT_HANDLE);
     buffCord = {0,0}; // DEFAULT
     buffWidth = 0;
     buffHeight = 0;
 
+    //CONSOLE_SCREEN_BUFFER_INFO scbinfo;
+    //GetConsoleScreenBufferInfo(hout,&scbinfo);
+    //scbinfo.dwSize.X = scbinfo.dwMaximumWindowSize.X;
+    //scbinfo.dwSize.Y = scbinfo.dwMaximumWindowSize.Y;
+    //SetConsoleScreenBufferSize(hout,scbinfo.dwSize);
     createBuffering(5,120,120);
+    
 }
 
 int consoleGraphic::onCreate(){
@@ -87,11 +104,12 @@ int consoleGraphic::onUpdate(){
 void consoleGraphic::createBuffering(int fontSize,short setWidth, short setHeight){
     delete[] map;
     if (fontSize != 0 && setWidth > 0 && setHeight > 0){
+        COORD dwSize = {setWidth,setHeight};
         buffWidth = setWidth;
         buffHeight = setHeight;
         fontInfo.dwFontSize.X = fontSize;
         fontInfo.dwFontSize.Y = fontSize;
-
+        
         SetCurrentConsoleFontEx(hout,true,&fontInfo);
         map = new CHAR_INFO[buffWidth*buffHeight];
         buffSize = {buffWidth,buffHeight};
@@ -101,8 +119,8 @@ void consoleGraphic::createBuffering(int fontSize,short setWidth, short setHeigh
             map[i].Char.AsciiChar = lightScale[0];
             map[i].Attributes = 0;
         }
-        COORD dwSize = {10,10};
         SetConsoleScreenBufferSize(hout,dwSize);
+        SetConsoleWindowInfo(hout,true,&writeArea);
     }
 }
 
@@ -119,11 +137,6 @@ void consoleGraphic::writeV2(SHORT frame){
 
 
 void consoleGraphic::setFont(int x, int y,int lightIndex,int attribute){
-    
-    /*if (map[x+y*width].Char.AsciiChar == lightIndex && map[x+y*width].Char.AsciiChar == attribute){
-        return;
-    }*/
-
     if (map != NULL && x < buffWidth && x > 0 && y > 0 && y < buffHeight && lightIndex < sizeof(lightScale)/sizeof(lightScale[0])){
         map[x+y*buffWidth].Char.AsciiChar = lightScale[lightIndex];
         map[x+y*buffWidth].Attributes = attribute;
@@ -131,6 +144,8 @@ void consoleGraphic::setFont(int x, int y,int lightIndex,int attribute){
 }
 
 void consoleGraphic::run(){
+    onCreate();
+    
     std::thread th([=]()
     {
         while (true){
@@ -139,14 +154,10 @@ void consoleGraphic::run(){
                 std::string title = "Elappsed Time: " + std::to_string(elappsedTime);
                 SetConsoleTitleA(title.c_str());
             }
-            //std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     });
 
-
-
-    
-    onCreate();
     while (true){
         auto start = std::chrono::system_clock::now();
         onUpdate();
