@@ -4,18 +4,20 @@
 #define BITMAP_H
 
 #include <Windows.h>
+#include <fstream>
 
 // Declaration
 class bitMap {
     private:
-        FILE* file;
         BITMAPFILEHEADER h{0};
         BITMAPINFOHEADER bitMapInfo{0};
         RGBTRIPLE *rgbt;
         
     public:
         bitMap(const char* fileName);
-        ~bitMap(); // Destructor
+        ~bitMap(){
+            delete[] rgbt;
+        }; // Destructor
 
         inline int getWidth();
         inline int getHeight();
@@ -29,6 +31,7 @@ class bitMap {
 
 // Definition
 bitMap::bitMap(const char* fileName){
+    FILE* file;
     file = fopen(fileName,"rb");
 
     if (file != NULL){
@@ -46,11 +49,6 @@ bitMap::bitMap(const char* fileName){
         fclose(file);
     }
 }
-
-bitMap::~bitMap(){
-    delete[] file;
-    delete[] rgbt;
-};
 
 inline int bitMap::getWidth(){
     return bitMapInfo.biWidth;
