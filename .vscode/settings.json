@@ -53,6 +53,8 @@
         "shared_mutex": "cpp",
         "fstream": "cpp",
         "cstdarg": "cpp",
-        "resumable": "cpp"
+        "resumable": "cpp",
+        "array": "cpp",
+        "iterator": "cpp"
     }
 }

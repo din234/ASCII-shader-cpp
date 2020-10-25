@@ -1,5 +1,4 @@
 
-#include <iostream>
 #include <string>
 
 #include "include/bitmap.h"
@@ -58,7 +57,6 @@ void imageRenderer::checkUserInput(){
         zoom-= temp*sensitivity;
     } else if (GetAsyncKeyState(VK_ESCAPE) < 0){
         SetConsoleTitleA("Stopped!!!");
-        std::cin.ignore();
     } else if (GetAsyncKeyState(VK_SPACE) < 0){
         runTest = false;
     }
@@ -105,8 +103,8 @@ int imageRenderer::onCreate(){
 int imageRenderer::onUpdate() {
     //test.run();
     checkUserInput();
-    for (int x = 0; x < buffWidth; x++){
-        for (int y = 0; y < buffHeight; y++){
+    for (int x = 0; x < getBuffWidth(); x++){
+        for (int y = 0; y < getBuffHeight(); y++){
             //if ((segment%flick + y) % flick != 0){
             int posX = x*zoom/zoomSensitivity + offSetX;
             int posY = y*zoom/zoomSensitivity + offSetY;

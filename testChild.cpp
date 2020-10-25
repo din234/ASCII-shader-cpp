@@ -15,6 +15,10 @@ void cls()
     Position.X = 0;
     Position.Y = 0;
     SetConsoleCursorPosition(hOut, Position);
+    for (int i = 0; i < 20; i ++){
+        printf("                                                                 ");
+    }
+    SetConsoleCursorPosition(hOut, Position);
 }
 
 int main(){
@@ -25,7 +29,8 @@ int main(){
     Readhandle = GetStdHandle(STD_INPUT_HANDLE);
 
     while (ReadFile(Readhandle, buffer, BUFFSIZE, &read, NULL)){
-        system("cls");
+        cls();
+        //system("cls");
         printf("%s",buffer);
 
         if (read == 0)break;

@@ -42,11 +42,11 @@ void processTest::thisFunctionCauseError(){
 }
 
 void processTest::run(char *cum){
-    // temp = "fkjdksalfdsf";
-    //char cum[] = "ddsdsdsds";
+    /*
     if(!WriteFile(writePipe,cum,BUFFSIZE,&write,NULL)){
         printf("failed to write to file!!!");
-    }
+    }*/
+    WriteFile(writePipe,cum,BUFFSIZE,&write,NULL);
     //std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
