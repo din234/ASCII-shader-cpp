@@ -11,8 +11,8 @@
 #include <math.h>
 #include <thread>
 
-#include "include/process.h"
-#include "include/mathExtra.h"
+#include "process.h"
+#include "mathExtra.h"
 
 #define BLACK 0x0000
 #define BLUE 0x0001
@@ -58,6 +58,14 @@ typedef struct PIXEL_ATTR {
     int greyLevel = 0;
     int color = 0;
 }pix;
+        /*
+        enum greyLevel {
+            NONE = ' ',
+            LOW = '.',
+            MEDIUM = '-',
+            HIGH = '>',
+            FULL = '@',
+        };*/
 
 
 class ConsoleGraphic {
@@ -70,37 +78,27 @@ class ConsoleGraphic {
         COORD buffSize;
         COORD buffCord;
         SMALL_RECT writeArea;
-        /*
-        enum greyLevel {
-            NONE = ' ',
-            LOW = '.',
-            MEDIUM = '-',
-            HIGH = '>',
-            FULL = '@',
-        };*/
         CHAR lightScale[5] = {' ','.','-','>','@'};
         processTest test;
 
+        std::vector<int> inputQueue;
         short buffWidth,buffHeight;
     protected:
-        const int minTimePerFrame = 33; // ms
+        const int minTimePerFrame = 17; // ms
         int elappsedTime = 0;
         bool runTest = true;
 
-        MOUSE_EVENT_RECORD mouses;
-
-        std::vector<int> inputQueue;
+        MOUSE_EVENT_RECORD mouse;
 
     private: // GET CONSOLE INPUT BUFFER
         void getKeyEventToQueue(KEY_EVENT_RECORD key);
-        void getMouseState(MOUSE_EVENT_RECORD mouse);
+        //void getMouseState(MOUSE_EVENT_RECORD mouse);
     
     private: // THREAD
         void inputThread();
         void logicThread();
     protected: // INHERITANCE
         void createBuffering(int fontSize,short setWidth, short setHeight);
-        virtual int onCreate();
         virtual int onInput(int keyCode);
         virtual int onUpdate();
         virtual std::string logger();
@@ -112,6 +110,8 @@ class ConsoleGraphic {
         void cls();
         void setFont(int x, int y,PIXEL_ATTR attr);
         void drawLine(float x1,float y1,float x2,float y2,PIXEL_ATTR lineAttr);
+
+        void drawSpline(float t,FCOORD p0, FCOORD p1, FCOORD p2);
 
         void drawTri(FCOORD *cord,PIXEL_ATTR borderAttr);
         void drawTri(FCOORD *cord,PIXEL_ATTR borderAttr,PIXEL_ATTR fillAttr);
@@ -159,12 +159,12 @@ ConsoleGraphic::ConsoleGraphic(){
 
     hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     hIn = GetStdHandle(STD_INPUT_HANDLE);
-    //SetConsoleMode(hIn,ENABLE_EXTENDED_FLAGS | ENABLE_MOUSE_INPUT);
+    SetConsoleMode(hIn,ENABLE_EXTENDED_FLAGS | ENABLE_MOUSE_INPUT);
 
     buffCord = {0,0}; // DEFAULT
     buffWidth = 0;
     buffHeight = 0;
-    createBuffering(5,120,120);   
+    createBuffering(5,130,130);
 }
 
 
@@ -192,10 +192,6 @@ void ConsoleGraphic::createBuffering(int fontSize,short setWidth, short setHeigh
         SetConsoleWindowInfo(hOut,true,&writeArea);
         SetConsoleScreenBufferSize(hOut,dwSize);
     }
-}
-
-int ConsoleGraphic::onCreate(){
-    return 0;
 }
 
 int ConsoleGraphic::onInput(int keyCode){
@@ -228,7 +224,7 @@ void ConsoleGraphic::inputThread(){
         ReadConsoleInput(hIn,&ckey,1,&read);
         switch(ckey.EventType){
             case KEY_EVENT: getKeyEventToQueue(ckey.Event.KeyEvent);break;
-            case MOUSE_EVENT: mouses = ckey.Event.MouseEvent;break;
+            case MOUSE_EVENT: mouse = ckey.Event.MouseEvent;break;
         }
     }
 }
@@ -245,6 +241,7 @@ void ConsoleGraphic::logicThread(){
         auto end = std::chrono::system_clock::now();
         auto elappsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
         elappsedTime = elappsed.count();
+        test.run(&logger()[0]);
 
         if (elappsedTime < minTimePerFrame){
             std::this_thread::sleep_for(std::chrono::milliseconds(minTimePerFrame - elappsedTime));
@@ -321,6 +318,55 @@ void ConsoleGraphic::drawLine(float x1, float y1, float x2, float y2,PIXEL_ATTR 
 
 
 
+
+void ConsoleGraphic::drawSpline(float t,FCOORD p0, FCOORD p1, FCOORD p2){
+    // bezier curves
+    /*
+    int px1 = 10, py1 = 50, px2 = 20, py2 = 20;
+    int px3 = 40, py3 = 50, px4 = 100, py4 = 20;
+
+    drawLine(px1,py1,px2,py2,{4,WHITE});
+    drawLine(px2,py2,px3,py3,{4,WHITE});
+    drawLine(px3,py3,px4,py4,{4,WHITE});
+
+    float temp = 1.00/10;
+    for (float count = 0; count < 1 + temp; count += temp){
+        //int ix = pow(1 - count,3)*px1 + 3*pow(1 - count,2)*count*px2 + 3*(1-count)*pow(count,2)*px3 + pow(count,3)*px4;
+        //int iy = pow(1 - count,3)*py1 + 3*pow(1 - count,2)*count*py2 + 3*(1-count)*pow(count,2)*py3 + pow(count,3)*py4;
+        
+        int bx1 = px1 + count*(px2 - px1), by1 = py1 + count*(py2 - py1);
+        int bx2 = px2 + count*(px3 - px2), by2 = py2 + count*(py3 - py2);
+        int bx3 = px3 + count*(px4 - px3), by3 = py3 + count*(py4 - py3);
+        
+        int ix1 = bx1 + count*(bx2 - bx1), iy1 = by1 + count*(by2 - by1);
+        int ix2 = bx2 + count*(bx3 - bx2), iy2 = by2 + count*(by3 - by2);
+
+        float ix = (1- count)*ix1 + count*ix2; // ix1 = ix2
+        float iy = (1- count)*iy1 + count*iy2;
+        setFont(ix,iy,{4,RED});
+    }*/
+
+    float temp = 1.00/t;
+    FCOORD setCord = p0;
+    for (float count = 0; count < 1 + temp; count += temp){
+        PIXEL_ATTR lineAttr{4, (int)(count *14 + 1)};
+
+        int ix1 = p0.x + count*(p1.x - p0.x), iy1 = p0.y + count*(p1.y - p0.y);
+        int ix2 = p1.x + count*(p2.x - p1.x), iy2 = p1.y + count*(p2.y - p1.y);
+
+        float ix = (1- count)*ix1 + count*ix2; // ix1 = ix2
+        float iy = (1- count)*iy1 + count*iy2;
+        drawLine(setCord.x,setCord.y,ix,iy,{4,WHITE});
+        setCord = {ix,iy};
+
+        //drawLine(ix1,iy1,ix2,iy2,lineAttr);
+        //drawRect(ix,iy,3,3,{4,WHITE});
+        //setFont(ix,iy,{4,WHITE});
+    }
+};
+
+
+
 void ConsoleGraphic::drawTri(FCOORD *cord,PIXEL_ATTR borderAttr){
     drawLine(cord[0].x,cord[0].y,cord[1].x,cord[1].y,borderAttr);
     drawLine(cord[0].x,cord[0].y,cord[2].x,cord[2].y,borderAttr);
@@ -377,29 +423,28 @@ void ConsoleGraphic::drawRect(int x, int y, int width, int height,PIXEL_ATTR bor
     drawLine(x,y+height-1,x+width-1,y+height-1,borderAttr);
 }
 void ConsoleGraphic::drawRect(int x, int y, int width, int height,PIXEL_ATTR borderAttr,PIXEL_ATTR fillAttr){
-    for (int iy = y; iy < (y+height); iy++){
-        for (int ix = x; ix < (x+width); ix++){
+    int maxX = (x+width < buffWidth)? (x+width): buffWidth;
+    int maxY = (y+height < buffHeight)? (y+height):buffHeight;
+    for (int iy = y; iy < maxY; iy++){
+        for (int ix = x; ix < maxX; ix++){
             setFont(ix,iy,fillAttr);
         }
     }
     drawRect(x,y,width,height,borderAttr);
 }
 
-void ConsoleGraphic::run(){
-    onCreate();
-
-    
-    
+void ConsoleGraphic::run(){    
+    /*
     std::thread th([=](){
         while (runTest){
-            test.run(&logger()[0]); // data race ()???
+            test.run(&logger()[0]);
             std::this_thread::sleep_for(std::chrono::milliseconds(33));
         }
-    });
+    });*/
     std::thread th1(&ConsoleGraphic::inputThread,this);
     std::thread th2(&ConsoleGraphic::logicThread,this);
 
-    th.join();
+    //th.join();
     th1.join();
     th2.join();
 }

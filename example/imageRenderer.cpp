@@ -17,9 +17,7 @@ class imageRenderer : public ConsoleGraphic{
         float offSetX = 0.00f;
         float offSetY = 0.00f;
     private:
-        void checkUserInput();
-    private:
-        int onCreate() override;
+        int onInput(int keyCode) override;
         int onUpdate() override;
         std::string logger() override;
     public:
@@ -34,43 +32,7 @@ class imageRenderer : public ConsoleGraphic{
 };
 
 
-imageRenderer::imageRenderer(){}
-
-void imageRenderer::checkUserInput(){
-    int temp = elappsedTime;
-    if (temp < minTimePerFrame){
-        temp = minTimePerFrame;
-    }
-    //elappsedTime = 1; // testing
-
-    if (GetAsyncKeyState(VK_LEFT) < 0){
-        offSetX-= temp*sensitivity;
-    } else if (GetAsyncKeyState(VK_RIGHT) < 0){
-        offSetX+= temp*sensitivity;
-    } else if (GetAsyncKeyState(VK_UP) < 0 ){
-        offSetY-= temp*sensitivity;
-    } else if (GetAsyncKeyState(VK_DOWN) < 0){
-        offSetY+= temp*sensitivity;
-    } else if (GetAsyncKeyState('X') < 0){
-        zoom+= temp*sensitivity;
-    } else if (GetAsyncKeyState('Z') < 0 && zoom > 1){
-        zoom-= temp*sensitivity;
-    } else if (GetAsyncKeyState(VK_ESCAPE) < 0){
-        SetConsoleTitleA("Stopped!!!");
-    } else if (GetAsyncKeyState(VK_SPACE) < 0){
-        runTest = false;
-    }
-}
-
-
-std::string imageRenderer::logger(){
-    return "Time Elappsed: " + std::to_string(elappsedTime) + "\n" + 
-    "OFFSET X: "  + std::to_string(offSetX) + "\n" + 
-    "OFFSET Y: "  + std::to_string(offSetY) + "\n" +
-    "ZOOM OUT: "  + std::to_string(zoom) + "\n";
-}
-
-int imageRenderer::onCreate(){
+imageRenderer::imageRenderer(){
     bitMap image("./image/24_bit/lena_color.bmp");
     int imageSize = image.getWidth()*image.getHeight();
 
@@ -97,15 +59,33 @@ int imageRenderer::onCreate(){
         imagePix[i].color = atrValue;
         imagePix[i].greyLevel = temp/52;
     }
+}
+
+int imageRenderer::onInput(int keyCode){
+    switch (keyCode){
+        case VK_ESCAPE: runTest = false;
+
+        case VK_LEFT: offSetX-= elappsedTime*sensitivity;break;
+        case VK_RIGHT: offSetX+= elappsedTime*sensitivity;break;
+        case VK_UP: offSetY-= elappsedTime*sensitivity;break;
+        case VK_DOWN: offSetY+= elappsedTime*sensitivity;break;
+        case 'X': zoom+= elappsedTime*sensitivity;break;
+        case 'Z': zoom-= elappsedTime*sensitivity;break;
+    }
     return 0;
 }
 
+
+std::string imageRenderer::logger(){
+    return "Time Elappsed: " + std::to_string(elappsedTime) + "\n" + 
+    "OFFSET X: "  + std::to_string(offSetX) + "\n" + 
+    "OFFSET Y: "  + std::to_string(offSetY) + "\n" +
+    "ZOOM OUT: "  + std::to_string(zoom) + "\n";
+}
+
 int imageRenderer::onUpdate() {
-    //test.run();
-    checkUserInput();
     for (int x = 0; x < getBuffWidth(); x++){
         for (int y = 0; y < getBuffHeight(); y++){
-            //if ((segment%flick + y) % flick != 0){
             int posX = x*zoom/zoomSensitivity + offSetX;
             int posY = y*zoom/zoomSensitivity + offSetY;
             if (posX > 0 && posY > 0 && posX < imageWidth && posY < imageHeight){

@@ -3,81 +3,80 @@
 class Motion:public ConsoleGraphic{
     private:
         const float height = 10,width = 5;
+        float midX = 0,midY = 0,rotate = 0;
 
-        float sensitivity = 20.00f / 1000.00f;
-        float midX = 0,midY = 0,rotate;
-
-        mathExtra::matrix<float,3,2> cord { // midX = PosX + width/2; midY = posY + height/3
-            -width/2 , -height/3,
-            0,2*height/3,
-            width/2, -height/3
+        mathExtra::matrix<float,2,3> cord { // midY = PosY + width/2; midX = posX + height/3
+            -height/3,-height/3, 2*height/3,
+            -width/2, width/2, 0
         };
 
+        float sensitivity = 20.00f / 1000.00f;
+
         inline FCOORD l(float x, float y) {
-            return {x + getBuffWidth()/2,getBuffHeight()/2 - y};
+            return {(getBuffWidth()/2) + x,(getBuffHeight()/2) - y};
         }
     public:
         Motion(){};
     private:
         int onInput(int keyCode) override;
-        int onCreate() override;
         int onUpdate() override;
         std::string logger();
 };
 
 
 
-
 std::string Motion::logger(){
+    FCOORD temp = l(mouse.dwMousePosition.X - getBuffWidth(),mouse.dwMousePosition.Y);
     return "Time Elappsed: " + std::to_string(elappsedTime) + 
+    "\n MOUSE X: "  + std::to_string(temp.x) + 
+    " Y: " + std::to_string(temp.y) +
+    "\nA: "+ std::to_string(sqrtf(powf(temp.x,2) + powf(temp.y,2))) + 
     "\n OffsetX: " + std::to_string(midX) +
     "\n OffsetY: " + std::to_string(midY) + 
     "\n Rotation: " + std::to_string(rotate);
-}
-
-int Motion::onCreate(){
-    return 0;
 }
 
 int Motion::onInput(int keyCode){
     switch (keyCode){
         case VK_ESCAPE: runTest = FALSE;break;
         case VK_LEFT:
-            midX-= (elappsedTime*sensitivity)*sinf(ANG((rotate+90)));
-            midY-= (elappsedTime*sensitivity)*cosf(ANG((rotate+90)));
+            midX+= (elappsedTime*sensitivity)*cosf(ANG((rotate + 90)));
+            midY+= (elappsedTime*sensitivity)*sinf(ANG((rotate + 90)));break;
+        case VK_UP:
+            midX+= (elappsedTime*sensitivity)*cosf(ANG((rotate)));
+            midY+= (elappsedTime*sensitivity)*sinf(ANG((rotate)));
             break;
-
-        case VK_UP: 
-            midX+= (elappsedTime*sensitivity)*sinf(ANG(rotate));
-            midY+= (elappsedTime*sensitivity)*cosf(ANG(rotate));break;
-            
-        case 'Q': rotate = (rotate > 0)? rotate-=2: rotate+360;break;
-        case 'E': rotate = (rotate < 360)? rotate+=2: rotate-360;break;
     }
     return 0;
 }
 
 int Motion::onUpdate(){
     cls();
-    PIXEL_ATTR lineAttr{4,WHITE};
+    PIXEL_ATTR lineAttr{4, WHITE};
     FCOORD tri[3];
+    FCOORD ro = l(mouse.dwMousePosition.X - getBuffWidth(),mouse.dwMousePosition.Y);
+    float vectorX = ro.x - midX;
+    float vectorY =ro.y - midY;
+    drawRect(mouse.dwMousePosition.X,mouse.dwMousePosition.Y,10,10,{4,WHITE},{4,RED});
 
+    rotate = (vectorX >= 0)? atan(vectorY/vectorX)*180/pi : 180 + atan(vectorY/vectorX)*180/pi;
 
     mathExtra::matrix<float,2,2> rota {
         cosf(ANG(rotate)),-sinf(ANG(rotate)),
         sinf(ANG(rotate)),cosf(ANG(rotate))
     };
-
-    auto temp = mathExtra::dotProduct(cord,rota);
+    auto temp = mathExtra::dotProduct(rota,cord);
 
     for (int i = 0; i < 3; i++){
-        tri[i] = { l(midX + temp[i][0], midY + temp[i][1]) };
+        tri[i] = { l(midX + temp[0][i], midY + temp[1][i]) };
     }
 
 
 
+
+
     //drawRect(posX,posY,10,10,lineAttr);
-    //drawLine(0,0, 10,10,lineAttr);
+    drawLine(midX,midY, mouse.dwMousePosition.X,mouse.dwMousePosition.Y,{4,BLUE});
     drawTri(tri,lineAttr,lineAttr);
     return 0;
 }

@@ -30,6 +30,63 @@ namespace mathExtra{
         return c;
     }
 
+    template<typename T, size_t s>
+    matrix<T,s,1> crossProduct(matrix<T,s,1> a, matrix<T,s,1> b){ // tich vecto
+        matrix<T,s,1> c;
+        for (int i = 0; i < s;i++){
+            c[i][0] = a[(i+1)%s][0] * b[(i+2)%s][0] - b[(i+1)%s][0] * a[(i+2)%s][0];
+        }
+        return c;
+    }
+
+    template<typename T,size_t h,size_t w>
+    matrix<T,w,h> reverse(matrix<T,h,w> a){
+        matrix<T,w,h> c;
+        for (int i = 0; i < h*w; i++){
+            int ih = i/w, iw = i - w*(i/w);
+            c[iw][ih] = a[ih][iw];
+        }
+        return c;
+    }
+
+    /*
+
+    template<typename T, size_t s>
+    matrix<T,1,s> crossProduct(matrix<T,1,s> a, matrix<T,1,s> b){ // tich vecto
+        matrix<T,1,s> c;
+        for (int i = 0; i < s;i++){
+            c[i] = a[0][(i+1)%s] * b[0][(i+2)%s] - b[0][(i+1)%s] * a[0][(i+2)%s];
+        }
+        return c;
+    }*/
+
+
+
+
+
+
+    template<typename T,int w>
+    using pointer_of_array = T[w]; // typedef
+
+    template<typename T,int s,int t>
+    pointer_of_array<T,t>* test(T (&arr) [s][t]){
+        return arr;
+    }
+
+    template<typename T,int h,int w,int s>
+    pointer_of_array<T,w>* dotProduct2DArr(T (&a) [h][s],T (&b) [s][w], T (&c) [h][w]){
+        for (int i = 0; i < h*w; i++){
+            T temp = 0x00;
+            int ih = i/w, iw = i - w*(i/w);
+            for (int j = 0; j < s;j++){
+                temp += a[ih][j]*b[j][iw];
+            }
+            c[ih][iw] = temp;
+        }
+        return c;
+    }
+    
+
 
     template<typename T>
     int checkElement(std::vector<T> *para,T n){
