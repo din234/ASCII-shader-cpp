@@ -86,8 +86,8 @@ std::string imageRenderer::logger(){
 int imageRenderer::onUpdate() {
     for (int x = 0; x < getBuffWidth(); x++){
         for (int y = 0; y < getBuffHeight(); y++){
-            int posX = x*zoom/zoomSensitivity + offSetX;
-            int posY = y*zoom/zoomSensitivity + offSetY;
+            int posX = (int) (x*zoom/zoomSensitivity + offSetX);
+            int posY = (int) (y*zoom/zoomSensitivity + offSetY);
             if (posX > 0 && posY > 0 && posX < imageWidth && posY < imageHeight){
                 int temp = posX + ((imageHeight -1) - posY) * imageWidth;
                 setFont(x,y,imagePix[temp]);

@@ -78,16 +78,15 @@ class ConsoleGraphic {
         COORD buffSize;
         COORD buffCord;
         SMALL_RECT writeArea;
-        CHAR lightScale[5] = {' ','.','-','>','@'};
+        WORD lightScale[5] = {0x20,0x2e,0x2d,0x3e,0x40};
         processTest test;
 
         std::vector<int> inputQueue;
         short buffWidth,buffHeight;
+        int minTimePerFrame = 33; // ms
     protected:
-        const int minTimePerFrame = 17; // ms
         int elappsedTime = 0;
         bool runTest = true;
-
         MOUSE_EVENT_RECORD mouse;
 
     private: // GET CONSOLE INPUT BUFFER
@@ -104,6 +103,8 @@ class ConsoleGraphic {
         virtual std::string logger();
 
     protected: // MODIFY OUTPUT
+
+        int setMinTimePerFrame(int time);
         inline short getBuffWidth();
         inline short getBuffHeight();
 
@@ -116,9 +117,8 @@ class ConsoleGraphic {
         void drawTri(FCOORD *cord,PIXEL_ATTR borderAttr);
         void drawTri(FCOORD *cord,PIXEL_ATTR borderAttr,PIXEL_ATTR fillAttr);
 
-        void drawRect(int x, int y, int width, int height,PIXEL_ATTR borderAttr);
-        void drawRect(int x, int y, int width, int height,PIXEL_ATTR borderAttr,PIXEL_ATTR fillAttr);
-
+        void drawRect(float x, float y, float width, float height,PIXEL_ATTR borderAttr);
+        void drawRect(float x, float y, float width, float height,PIXEL_ATTR borderAttr,PIXEL_ATTR fillAttr);
         void drawPoly();
 
     public:
@@ -160,11 +160,7 @@ ConsoleGraphic::ConsoleGraphic(){
     hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     hIn = GetStdHandle(STD_INPUT_HANDLE);
     SetConsoleMode(hIn,ENABLE_EXTENDED_FLAGS | ENABLE_MOUSE_INPUT);
-
-    buffCord = {0,0}; // DEFAULT
-    buffWidth = 0;
-    buffHeight = 0;
-    createBuffering(5,130,130);
+    //createBuffering(1,130,130);
 }
 
 
@@ -173,7 +169,11 @@ ConsoleGraphic::ConsoleGraphic(){
 
 void ConsoleGraphic::createBuffering(int fontSize,short setWidth, short setHeight){
     if (fontSize != 0 && setWidth > 0 && setHeight > 0){
-        //if (map != NULL){delete[] map;};
+        buffCord = {0,0}; // DEFAULT
+        buffWidth = 0;
+        buffHeight = 0;
+        //if (onCreate){delete[] map;};
+        //onCreate = TRUE;
 
         COORD dwSize = {setWidth,setHeight};
         buffWidth = setWidth;
@@ -240,7 +240,7 @@ void ConsoleGraphic::logicThread(){
         WriteConsoleOutput(hOut,map,buffSize,buffCord,&writeArea);
         auto end = std::chrono::system_clock::now();
         auto elappsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        elappsedTime = elappsed.count();
+        elappsedTime = (int) elappsed.count();
         test.run(&logger()[0]);
 
         if (elappsedTime < minTimePerFrame){
@@ -263,6 +263,10 @@ std::string ConsoleGraphic::logger(){
 
 
 
+int ConsoleGraphic::setMinTimePerFrame(int time){
+    minTimePerFrame = time;
+    return minTimePerFrame;
+}
 
 inline short ConsoleGraphic::getBuffWidth(){
     return buffWidth;
@@ -288,31 +292,26 @@ void ConsoleGraphic::setFont(int x, int y,PIXEL_ATTR attr){
 }
 
 void ConsoleGraphic::drawLine(float x1, float y1, float x2, float y2,PIXEL_ATTR lineAttr){
-    int tx,ty;
-    float k = (y2 - y1) / (x2 - x1);
-
-	float bx = y1 - k * x1; // || bx = y2 - k * x2;
-	float by = x1 - y1/k;
-
-    tx = (x1 < x2) ? x1 : x2;
-    ty = (y1 < y2) ? y1 : y2;
-
-    //tx = (tx < 0) ? 0 : tx;
+	float k = (y2 - y1) / (x2 - x1);
 
     //if (abs(x2-x1) > buffWidth || abs(y2-y1) > buffHeight){return;}; // prevent infinity loop
     if (k >= -1 && k <=1) {
-        for (int i = ((tx < 0)?0:tx); i < abs(x2-x1)+tx && i < buffWidth; i++){
-		    ty = k * i + bx;
-            setFont(i, ty,lineAttr);
+		float bx = y1 - k * x1; // || bx = y2 - k * x2;
+		float tx = (x1 < x2) ? x1 : x2;
+        for (float i = ((tx < 0)?0:tx); i < abs(x2-x1)+tx && i < buffWidth; i++){
+		    float ty = k * i + bx;
+            setFont((int) i, (int) ty,lineAttr);
         }
 	} else {
-        for (int j = ((ty < 0)?0:ty); j < abs(y2-y1)+ty && j < buffHeight; j++){
-		    tx = 1 / k * j + by;
-            setFont(tx, j,lineAttr);
+		float by = x1 - y1/k;
+		float ty = (y1 < y2) ? y1 : y2;
+        for (float j = ((ty < 0)?0:ty); j < abs(y2-y1)+ty && j < buffHeight; j++){
+		    float tx = 1 / k * j + by;
+            setFont((int) tx, (int) j,lineAttr);
         }
 	}
-    setFont(x1, y1,lineAttr);
-	setFont(x2, y2,lineAttr);
+    setFont((int) x1, (int) y1,lineAttr);
+	setFont((int) x2, (int) y2,lineAttr);
 }
 
 
@@ -346,13 +345,13 @@ void ConsoleGraphic::drawSpline(float t,FCOORD p0, FCOORD p1, FCOORD p2){
         setFont(ix,iy,{4,RED});
     }*/
 
-    float temp = 1.00/t;
+    float temp = 1.00f/t;
     FCOORD setCord = p0;
     for (float count = 0; count < 1 + temp; count += temp){
         PIXEL_ATTR lineAttr{4, (int)(count *14 + 1)};
 
-        int ix1 = p0.x + count*(p1.x - p0.x), iy1 = p0.y + count*(p1.y - p0.y);
-        int ix2 = p1.x + count*(p2.x - p1.x), iy2 = p1.y + count*(p2.y - p1.y);
+        float ix1 = p0.x + count*(p1.x - p0.x), iy1 = p0.y + count*(p1.y - p0.y);
+        float ix2 = p1.x + count*(p2.x - p1.x), iy2 = p1.y + count*(p2.y - p1.y);
 
         float ix = (1- count)*ix1 + count*ix2; // ix1 = ix2
         float iy = (1- count)*iy1 + count*iy2;
@@ -402,13 +401,13 @@ void ConsoleGraphic::drawTri(FCOORD cord[3],PIXEL_ATTR borderAttr,PIXEL_ATTR fil
     for (x; x < cord[iMid].x && x < buffWidth;x++){
         // std::cout << temp << std::endl; // test error
         //std::cout << iMid << std::endl; // test error
-        int giaoY2 = k*x-b;
-        int giaoY1 = kMin*x-bMin;
+        float giaoY2 = k*x-b;
+        float giaoY1 = kMin*x-bMin;
         drawLine(x,giaoY1,x,giaoY2,fillAttr);
     }
     for (x; x < maxX && x < buffWidth;x++){
-        int giaoY2 = k*x-b;
-        int giaoY3 = kMax*x-bMax;
+        float giaoY2 = k*x-b;
+        float giaoY3 = kMax*x-bMax;
         drawLine(x,giaoY3,x,giaoY2,fillAttr);
     }
     
@@ -416,18 +415,18 @@ void ConsoleGraphic::drawTri(FCOORD cord[3],PIXEL_ATTR borderAttr,PIXEL_ATTR fil
 }
 
 
-void ConsoleGraphic::drawRect(int x, int y, int width, int height,PIXEL_ATTR borderAttr){
+void ConsoleGraphic::drawRect(float x, float y, float width, float height,PIXEL_ATTR borderAttr){
     drawLine(x,y,x+width-1,y,borderAttr);
     drawLine(x,y,x,y+height-1,borderAttr);
     drawLine(x+width-1,y,x+width-1,y+height-1,borderAttr);
     drawLine(x,y+height-1,x+width-1,y+height-1,borderAttr);
 }
-void ConsoleGraphic::drawRect(int x, int y, int width, int height,PIXEL_ATTR borderAttr,PIXEL_ATTR fillAttr){
-    int maxX = (x+width < buffWidth)? (x+width): buffWidth;
-    int maxY = (y+height < buffHeight)? (y+height):buffHeight;
-    for (int iy = y; iy < maxY; iy++){
-        for (int ix = x; ix < maxX; ix++){
-            setFont(ix,iy,fillAttr);
+void ConsoleGraphic::drawRect(float x, float y, float width, float height,PIXEL_ATTR borderAttr,PIXEL_ATTR fillAttr){
+    float maxX = (x+width < buffWidth)? (x+width): buffWidth;
+    float maxY = (y+height < buffHeight)? (y+height):buffHeight;
+    for (float iy = y; iy < maxY; iy++){
+        for (float ix = x; ix < maxX; ix++){
+            setFont((int) ix,(int) iy,fillAttr);
         }
     }
     drawRect(x,y,width,height,borderAttr);

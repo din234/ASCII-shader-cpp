@@ -1,5 +1,5 @@
 
-
+#include <iostream>
 #include <fstream>
 #include "include/consoleGraphic.h"
 
@@ -9,22 +9,25 @@ typedef struct Vertex{
     float z = 0;
 }vertex;
 
+struct entity{
+    float x;
+    float y;
+    float z;
+    float vert;
+};
+
 class Geometry:public ConsoleGraphic{
     private:
         float sensitivity = 10.00f / 1000.00f;
 
         // FORCE CODE
-        int currentYawAngle = 0,clickX = 0;
-        int currentPitchAngle = 0,clickY = 0;
+        float currentYawAngle = 0,clickX = 0;
+        float currentPitchAngle = 0,clickY = 0;
 
-        float posX = 0, posY = 0, posZ = 0;
-
+        float posX = 0.00f, posY = 0.00f, posZ = 0.00f;
+        float yaw = 0.00f,roll = 0.00f,pitch = 0.00f;
         // camera (project with plane: z = 0)
-        float cx= getBuffWidth()/2 , cy=getBuffHeight()/2;
-        float cz = -cx/tan(ANG(90/2));// tan(FOV/2) = cx/cz
-
-        int yaw = 0,roll = 0,pitch = 0;
-
+        float cx,cy,cz;
         float scale = 1;
         std::vector<Vertex> vertices;
         std::vector<std::vector<int>> faces;
@@ -33,6 +36,9 @@ class Geometry:public ConsoleGraphic{
         Geometry();
     private:
         //void checkUserInput();
+
+
+        void readFile();
         void getNormal();
         mathExtra::matrix<float,3,3> getRotationMatrix();
         FCOORD projection(float dx, float dy, float dz);
@@ -47,11 +53,30 @@ class Geometry:public ConsoleGraphic{
 
 
 
-
+void Geometry::readFile(){
+    std::ifstream file;
+	std::string line;
+    //file.open("teapot.txt");
+    file.open("./image/teapot.txt");
+    while (getline(file, line)){
+        char type;
+        file >> type;
+        if (type == 'v'){
+            float x,y,z;
+            file >> x >> y >> z;
+            vertices.push_back({scale*x,scale*y,scale*z});
+        } else if (type == 'f') {
+            int a,b,c;
+            file >> a >> b >> c;
+            faces.push_back({a,b,c});
+        }
+    }
+    file.close();
+}
 
 
 void Geometry::getNormal(){
-    for (int i = 0; i < faces.size(); i++){
+    for (unsigned int i = 0; i < faces.size(); i++){
         FCOORD cord[3] = {0};
         Vertex triCord[3] = {0};
         bool drawBool = true;
@@ -84,24 +109,15 @@ void Geometry::getNormal(){
 
 
 
+
 Geometry::Geometry(){
-    std::ifstream file;
-	std::string line;
-    file.open("./image/teapot.txt");
-    while (getline(file, line)){
-        char type;
-        file >> type;
-        if (type == 'v'){
-            float x,y,z;
-            file >> x >> y >> z;
-            vertices.push_back({scale*x,scale*y,scale*z});
-        } else if (type == 'f') {
-            int a,b,c;
-            file >> a >> b >> c;
-            faces.push_back({a,b,c});
-        }
-    }
-    file.close();
+    //setMinTimePerFrame(17);
+    createBuffering(5,130,130);
+    cx= (float) getBuffWidth()/2;
+    cy= (float) getBuffHeight()/2;
+    cz = -cx/tan(ANG(90/2));// tan(FOV/2) = cx/cz
+
+    readFile();
     getNormal();
 }
 
@@ -119,10 +135,11 @@ FCOORD Geometry::projection(float dx, float dy, float dz){
 
 mathExtra::matrix<float,3,3> Geometry::getRotationMatrix(){
 
+	float temp = (float) cosf((float) ANG((float)roll));
     mathExtra::matrix<float,3,3> maRoll = {
-        cosf(ANG(roll)), -sinf(ANG(roll)), 0,
-        sinf(ANG(roll)), cosf(ANG(roll)), 0,
-        0, 0, 1
+        cosf(ANG(roll)), -sinf(ANG(roll)), 0.00f,
+        sinf(ANG(roll)), cosf(ANG(roll)), 0.00f,
+        0.00f, 0.00f, 1.00f
     };
 
     mathExtra::matrix<float,3,3> maPitch = {
@@ -187,19 +204,19 @@ int Geometry::onInput(int keyCode){
 
 int Geometry::onUpdate(){
     cls();
-    drawRect(getBuffWidth()/2,getBuffHeight()/2,3,3,{4,WHITE});
+    drawRect((float) getBuffWidth()/2,(float) getBuffHeight()/2,3,3,{4,WHITE});
     PIXEL_ATTR lineAttr{4,WHITE};
 
 
-    FCOORD ro = {mouse.dwMousePosition.X,mouse.dwMousePosition.Y};
+    FCOORD ro = { (float) mouse.dwMousePosition.X, (float) mouse.dwMousePosition.Y};
     if (mouse.dwButtonState == 1){
         float vectorX = ro.x - clickX;
         float vectorY = ro.y - clickY;
         
         float setYawAngle = (vectorX >= 0)? 90+ atan(cz/vectorX)*180/pi : 90+ 180 + atan(cz/vectorX)*180/pi;
         float setPitchAngle = (vectorY >= 0)? 90+ atan(cz/vectorY)*180/pi : 90+ 180 + atan(cz/vectorY)*180/pi;
-        yaw = (int)(currentYawAngle + setYawAngle)%360;
-        pitch = (int)(currentPitchAngle+ setPitchAngle)%360;
+        yaw = currentYawAngle + setYawAngle;
+        pitch = currentPitchAngle+ setPitchAngle;
     } else {
         clickX = ro.x;
         clickY = ro.y;
@@ -207,8 +224,8 @@ int Geometry::onUpdate(){
         currentPitchAngle = pitch;
     }
     auto rotate = getRotationMatrix();
-
-    for (short i = 0; i < normalVect.size(); i++){
+    
+    for (unsigned int i = 0; i < normalVect.size(); i++){
         FCOORD cord[3] = {0};
         bool drawBool = true;
         auto flatShade = mathExtra::dotProduct(rotate,normalVect[i]);
@@ -224,23 +241,21 @@ int Geometry::onUpdate(){
                 auto backFace = mathExtra::dotProduct(mathExtra::reverse(newCord),flatShade);
                 if (backFace[0][0] < 0){drawBool = false;break;}
             }
-            if (newCord[2][0] < 0){
-                drawBool = false;
-                break;
-            }
+            if (newCord[2][0] < 0){drawBool = false;break;}
             
             cord[j] = projection(newCord[0][0],newCord[1][0],newCord[2][0]);
         }
 
         if (drawBool){
-            int test = 5*flatShade[2][0]/sqrtf(powf(flatShade[0][0],2) + powf(flatShade[1][0],2) + powf(flatShade[2][0],2));
+            //std::cout << "DSAD" << std::endl;
+            int test = (int) (5*flatShade[2][0]/sqrtf(powf(flatShade[0][0],2) + powf(flatShade[1][0],2) + powf(flatShade[2][0],2)));
+            
             /*int test = 5*normalVect[i][2][0]/sqrtf(
                 powf(normalVect[i][0][0],2) + 
                 powf(normalVect[i][1][0],2) + 
                 powf(normalVect[i][2][0],2));*/
             drawTri(cord,{test,BLUE},{test,WHITE});
         }
-    
     }
     return 0;
 }

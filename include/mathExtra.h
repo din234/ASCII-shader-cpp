@@ -6,12 +6,11 @@
 #include <array>
 #include <vector>
 
-#define pi 3.14159
-#define ANG(x) x*pi/180
+#define pi 3.14159f
+#define ANG(x) (float) x*pi/180
 
 
 namespace mathExtra{
-
 
     template<typename T,size_t h,size_t w>
     using matrix = std::array<std::array<T,w>,h>;
@@ -90,7 +89,7 @@ namespace mathExtra{
 
     template<typename T>
     int checkElement(std::vector<T> *para,T n){
-        for (int i = 0; i < para->size(); i++){
+        for (unsigned int i = 0; i < para->size(); i++){
             if (para->at(i) == n){return 0;}
         }
         return 1;

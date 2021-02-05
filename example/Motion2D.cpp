@@ -16,7 +16,10 @@ class Motion:public ConsoleGraphic{
             return {(getBuffWidth()/2) + x,(getBuffHeight()/2) - y};
         }
     public:
-        Motion(){};
+        Motion(){
+            setMinTimePerFrame(17);
+            createBuffering(5,130,130);
+        };
     private:
         int onInput(int keyCode) override;
         int onUpdate() override;
@@ -26,7 +29,7 @@ class Motion:public ConsoleGraphic{
 
 
 std::string Motion::logger(){
-    FCOORD temp = l(mouse.dwMousePosition.X - getBuffWidth(),mouse.dwMousePosition.Y);
+    FCOORD temp = l((float) mouse.dwMousePosition.X - getBuffWidth(),(float) mouse.dwMousePosition.Y);
     return "Time Elappsed: " + std::to_string(elappsedTime) + 
     "\n MOUSE X: "  + std::to_string(temp.x) + 
     " Y: " + std::to_string(temp.y) +
@@ -54,7 +57,7 @@ int Motion::onUpdate(){
     cls();
     PIXEL_ATTR lineAttr{4, WHITE};
     FCOORD tri[3];
-    FCOORD ro = l(mouse.dwMousePosition.X - getBuffWidth(),mouse.dwMousePosition.Y);
+    FCOORD ro = l((float) mouse.dwMousePosition.X - getBuffWidth(),(float) mouse.dwMousePosition.Y);
     float vectorX = ro.x - midX;
     float vectorY =ro.y - midY;
     drawRect(mouse.dwMousePosition.X,mouse.dwMousePosition.Y,10,10,{4,WHITE},{4,RED});

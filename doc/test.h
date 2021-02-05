@@ -95,3 +95,64 @@ void variadicFunc(const char* count ...){
     ENUMERATION (enum)
 */
 enum shader {none,low,medium,high,bright}shade; // shade is an enum variable
+
+
+
+
+
+/*
+    Function pointer:
+*/
+void doSomething(int value){
+    std::cout << value << std::endl;
+}
+
+void inherit(int index,void(*funcPt)(int)){
+    funcPt(index);
+}
+
+void hello(){
+    std::cout << "hello" << std::endl;
+}
+
+int main(){
+    typedef void(*funcPt)();
+
+    funcPt function = hello;
+    function();
+
+    void(*func)() = hello;
+    func();
+
+    inherit(1,doSomething);
+    return 0;
+}
+
+
+
+
+
+/*
+    Static function and static variable example;
+    Work like global member with namespace
+*/
+class Box{
+    public:
+        int static numberOfObject;
+        Box(){
+            numberOfObject++;
+        }
+
+        int static getCount(){ // can only access static member (variable)
+            return numberOfObject;
+        }
+};
+int Box::numberOfObject = 0;
+
+int main(){
+    Box obj1;
+    Box obj2;
+    std::cout << Box::numberOfObject << std::endl; // Ouput = 2
+
+
+}

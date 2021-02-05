@@ -4,7 +4,6 @@ using namespace std;
 
 #define BUFFSIZE 1048
 
-
 void cls()
 {
     HANDLE hOut;
